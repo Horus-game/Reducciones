@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deducciones GLP</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#e8e8e8;min-height:100vh;padding-bottom:20px}
+.topbar{background:#1a3a5c;color:white;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.topbar h1{font-size:16px;font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.refresh-btn{background:#2a5f9e;border:none;border-radius:6px;color:white;padding:8px 12px;cursor:pointer;font-size:12px;font-family:inherit;font-weight:600}
+.vista-btn{background:#f5a623;border:none;border-radius:6px;color:white;padding:8px 12px;cursor:pointer;font-size:12px;font-family:inherit;font-weight:600}
+.ultimo{text-align:center;font-size:11px;color:#888;padding:6px;background:#f0f0f0}
+.tabs{display:flex;background:#1e3a5f;padding:0 12px}
+.tab{background:none;border:none;color:#c8ddf0;padding:10px 16px;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;border-bottom:3px solid transparent}
+.tab.active{color:white;border-bottom:3px solid #f5a623}
+.tab:hover{color:white}
+.search-wrap{padding:10px 12px;background:white;border-bottom:1px solid #e0e0e0}
+.search-input{width:100%;padding:8px 12px;font-size:14px;border:2px solid #e0e0e0;border-radius:8px;font-family:inherit;outline:none}
+.search-input:focus{border-color:#1a3a5c}
+.content{padding:12px;overflow-x:auto}
+.mes-titulo{background:#f5a623;color:white;font-size:14px;font-weight:700;padding:8px 14px;border-radius:8px 8px 0 0;display:inline-block}
+.tabla-wrap{background:white;border-radius:0 8px 8px 8px;overflow:hidden;border:1px solid #e0e0e0;min-width:600px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+.th-nombre{background:#1a3a5c;color:white;padding:7px 10px;text-align:left;font-size:10px;font-weight:600;white-space:nowrap;min-width:160px}
+.th-cargo{background:#1a3a5c;color:white;padding:7px 8px;text-align:center;font-size:10px;font-weight:600;width:40px}
+.th-turno{background:#1a3a5c;color:white;padding:5px 6px;text-align:center;font-size:9px;font-weight:600;line-height:1.3;min-width:52px}
+.th-total{background:#1a3a5c;color:white;padding:7px 8px;text-align:center;font-size:10px;font-weight:600;width:50px}
+.th-red{background:#1a3a5c;color:white;padding:7px 8px;text-align:center;font-size:10px;font-weight:600;width:40px}
+.tr-fecha td{background:#595959;color:white;font-size:9px;text-align:center;padding:3px 6px;font-family:monospace}
+td{padding:5px 8px;border-bottom:1px solid #f0f0f0;color:#374151}
+tr:hover td{background:#f9fafb!important}
+.td-nombre{font-size:11px;white-space:nowrap}
+.td-cargo{text-align:center;font-size:10px;font-weight:600}
+.td-val{text-align:center;font-family:monospace;font-size:11px}
+.td-total{text-align:center;font-weight:700;font-size:11px;background:#f5f5f5}
+.td-red{text-align:center;font-weight:700;font-size:11px;background:#f5f5f5}
+.val-cero{background:#ffcccc!important;color:#c0392b;font-weight:700}
+.val-uno{background:#ffffff}
+.val-parcial{background:#fff9e6;color:#856404}
+.tr-total td{background:#f5a623!important;color:white;font-weight:700}
+.cargo-jt{background:#4472C4;color:white;border-radius:4px;padding:1px 5px}
+.cargo-at{background:#4472C4;color:white;border-radius:4px;padding:1px 5px}
+.cargo-tc{background:#70AD47;color:white;border-radius:4px;padding:1px 5px}
+.vacante td{background:#e0f7fa!important;color:#006064;font-weight:600}
+.cal-layout{display:flex;gap:10px;min-height:400px}
+.cal-lista{width:190px;min-width:190px;background:white;border-radius:10px;overflow:hidden;border:1px solid #e0e0e0;max-height:75vh;overflow-y:auto}
+.cal-lista-hdr{background:#1a3a5c;color:white;padding:8px 12px;font-size:12px;font-weight:700;position:sticky;top:0}
+.cal-agente-btn{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid #f0f0f0;padding:8px 10px;font-size:11px;cursor:pointer;font-family:inherit;color:#374151;line-height:1.3}
+.cal-agente-btn:hover{background:#f0f5ff}
+.cal-agente-btn.active{background:#1a3a5c;color:white;font-weight:600}
+.cal-agente-btn.jt-row{border-left:3px solid #4472C4}
+.cal-agente-btn.tc-row{border-left:3px solid #70AD47}
+.cal-panel{flex:1;background:white;border-radius:10px;border:1px solid #e0e0e0;overflow:hidden}
+.cal-panel-hdr{background:#1a3a5c;color:white;padding:10px 14px}
+.cal-panel-hdr h3{font-size:13px;font-weight:600;margin-bottom:3px}
+.cal-panel-sub{font-size:11px;color:#aac4e0}
+.cal-body{padding:12px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-dia-hdr{text-align:center;font-size:9px;font-weight:600;color:#888;padding:3px 0}
+.cal-dia{border-radius:6px;padding:4px;min-height:54px;background:#f8f8f8;border:1px solid #e8e8e8}
+.cal-dia.vacio{background:transparent;border-color:transparent}
+.cal-dia-num{font-size:10px;color:#666;font-weight:600;margin-bottom:2px}
+.cal-dia-val{font-size:11px;font-weight:700;text-align:center;border-radius:4px;padding:3px 4px;margin-top:2px}
+.cal-dia-turno{font-size:8px;text-align:center;color:#888;line-height:1.2;margin-top:2px}
+.cal-val-cero{background:#ffcccc;color:#c0392b}
+.cal-val-uno{background:#d4edda;color:#155724}
+.cal-val-parcial{background:#fff3cd;color:#856404}
+.cal-empty{display:flex;align-items:center;justify-content:center;height:200px;color:#bbb;font-size:14px}
+.loading{text-align:center;padding:40px;color:#9ca3af}
+.error{text-align:center;padding:30px;color:#dc2626}
+@media(max-width:500px){
+  .cal-layout{flex-direction:column}
+  .cal-lista{width:100%;max-height:200px}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>📋 Deducciones GLP</h1>
+  <div class="topbar-right">
+    <button class="vista-btn" id="btnVista" onclick="toggleVista()">📅 Calendario</button>
+    <button class="refresh-btn" onclick="cargar()">↻</button>
+  </div>
+</div>
+<div class="ultimo" id="ultimo">Cargando...</div>
+<div class="tabs" id="tabs"></div>
+<div class="search-wrap" id="searchWrap">
+  <input class="search-input" id="buscar" type="text" placeholder="🔍 Buscar agente..." oninput="renderContent()" autocomplete="off"/>
+</div>
+<div class="content" id="content"><div class="loading">Cargando datos...</div></div>
+
+<script>
+var API='https://script.google.com/macros/s/AKfycbyc385qiZUVuLQYCuo9Ch7OvQQK37CHDpzj0YMjz0Ma0-pepjbIHrPIeo0uiUD-Mqfh/exec';
+var datos=null,compActiva='C1',vistaCalendario=false,agenteSeleccionado=null;
+
+window.handleData=function(d){
+  datos=d;renderTabs();renderContent();
+  document.getElementById('ultimo').textContent='Última actualización: '+new Date().toLocaleTimeString('es-AR');
+};
+
+function cargar(){
+  document.getElementById('ultimo').textContent='Actualizando...';
+  var old=document.getElementById('jsonp-script');
+  if(old)old.parentNode.removeChild(old);
+  var s=document.createElement('script');
+  s.id='jsonp-script';
+  s.src=API+'?callback=handleData&_='+Date.now();
+  s.onerror=function(){
+    document.getElementById('ultimo').textContent='Error de conexión';
+    document.getElementById('content').innerHTML='<div class="error">Error al cargar datos</div>';
+  };
+  document.head.appendChild(s);
+}
+
+function toggleVista(){
+  vistaCalendario=!vistaCalendario;
+  agenteSeleccionado=null;
+  var btn=document.getElementById('btnVista');
+  var sw=document.getElementById('searchWrap');
+  btn.textContent=vistaCalendario?'📋 Tabla':'📅 Calendario';
+  sw.style.display=vistaCalendario?'none':'block';
+  renderContent();
+}
+
+function renderTabs(){
+  if(!datos)return;
+  document.getElementById('tabs').innerHTML=Object.keys(datos).map(function(c){
+    return '<button class="tab '+(c===compActiva?'active':'')+'" onclick="setComp(\''+c+'\')">'+c+'</button>';
+  }).join('');
+}
+
+function setComp(c){compActiva=c;agenteSeleccionado=null;renderTabs();renderContent();}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function cargoBadge(cargo){
+  if(cargo==='JT')return '<span class="cargo-jt">JT</span>';
+  if(cargo==='AT')return '<span class="cargo-at">AT</span>';
+  if(cargo==='TC')return '<span class="cargo-tc">TC</span>';
+  return esc(cargo);
+}
+
+function vCls(v){var n=parseFloat(v);return n===0?'val-cero':n===1?'val-uno':'val-parcial';}
+function calVCls(v){var n=parseFloat(v);return n===0?'cal-val-cero':n===1?'cal-val-uno':'cal-val-parcial';}
+
+function renderContent(){
+  if(!datos||!datos[compActiva]){document.getElementById('content').innerHTML='<div class="error">Sin datos</div>';return;}
+  vistaCalendario?renderCalendario():renderTabla();
+}
+
+function renderTabla(){
+  var d=datos[compActiva],turnos=d.turnos||[];
+  var q=document.getElementById('buscar')?document.getElementById('buscar').value.trim().toLowerCase():'';
+  var filaTotal=null;
+  var agentes=(d.agentes||[]).filter(function(a){
+    if(a.nombre==='TOTAL'){filaTotal=a;return false;}
+    if(q&&a.nombre.toLowerCase().indexOf(q)<0)return false;
+    return true;
+  });
+  var thT=turnos.map(function(t){return '<th class="th-turno">'+t.nombre.replace('\n','<br>')+'</th>';}).join('');
+  var tdF=turnos.map(function(t){return '<td>'+esc(t.fecha)+'</td>';}).join('');
+  var filas=agentes.map(function(a){
+    var tds=a.valores.map(function(v){return '<td class="td-val '+vCls(v)+'">'+esc(v)+'</td>';}).join('');
+    return '<tr class="'+(a.nombre==='VACANTE'?'vacante':'')+'">'
+      +'<td class="td-nombre">'+esc(a.nombre)+'</td>'
+      +'<td class="td-cargo">'+cargoBadge(a.cargo)+'</td>'
+      +tds+'<td class="td-total">'+esc(a.total)+'</td><td class="td-red">'+esc(a.red)+'</td></tr>';
+  }).join('');
+  var totHtml=filaTotal&&!q?'<tr class="tr-total"><td class="td-nombre">TOTAL</td><td></td>'
+    +filaTotal.valores.map(function(v){return '<td>'+esc(v)+'</td>';}).join('')+'<td></td><td></td></tr>':'';
+  document.getElementById('content').innerHTML=
+    '<div class="mes-titulo">'+esc(d.mes)+' — '+compActiva+'</div>'
+    +'<div class="tabla-wrap"><table><thead><tr>'
+    +'<th class="th-nombre">Nombre</th><th class="th-cargo">Cargo</th>'+thT
+    +'<th class="th-total">Total</th><th class="th-red">RED</th>'
+    +'</tr><tr class="tr-fecha"><td></td><td></td>'+tdF+'<td></td><td></td></tr></thead>'
+    +'<tbody>'+filas+totHtml+'</tbody></table></div>';
+}
+
+function renderCalendario(){
+  var d=datos[compActiva],turnos=d.turnos||[];
+  var agentes=(d.agentes||[]).filter(function(a){return a.nombre!=='TOTAL';});
+  var lista=agentes.map(function(a){
+    var cls='cal-agente-btn';
+    if(a.cargo==='JT'||a.cargo==='AT')cls+=' jt-row';
+    if(a.cargo==='TC')cls+=' tc-row';
+    if(agenteSeleccionado&&agenteSeleccionado.nombre===a.nombre)cls+=' active';
+    var safe=a.nombre.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return '<button class="'+cls+'" onclick="selAgente(\''+safe+'\')">'
+      +esc(a.nombre)+(a.cargo?' <small style="opacity:0.7">('+esc(a.cargo)+')</small>':'')+'</button>';
+  }).join('');
+
+  var panel='';
+  if(!agenteSeleccionado){
+    panel='<div class="cal-empty">👈 Seleccioná un agente</div>';
+  } else {
+    var ag=agenteSeleccionado;
+    var diasTurno={};
+    turnos.forEach(function(t,i){
+      var p=t.fecha.split('/');
+      diasTurno[parseInt(p[0])]={turno:t.nombre.replace('\n',' '),valor:ag.valores[i]};
+    });
+    var pf=turnos[0].fecha.split('/');
+    var mes=parseInt(pf[1]),anio=parseInt(pf[2]);
+    var diasEnMes=new Date(anio,mes,0).getDate();
+    var primerDia=new Date(anio,mes-1,1).getDay();
+    primerDia=primerDia===0?6:primerDia-1;
+    var MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    var celdas='';
+    for(var v=0;v<primerDia;v++)celdas+='<div class="cal-dia vacio"></div>';
+    for(var dd=1;dd<=diasEnMes;dd++){
+      var info=diasTurno[dd];
+      var vHtml='';
+      if(info){
+        vHtml='<div class="cal-dia-val '+calVCls(info.valor)+'">'+esc(info.valor)+'</div>'
+          +'<div class="cal-dia-turno">'+esc(info.turno)+'</div>';
+      }
+      celdas+='<div class="cal-dia"><div class="cal-dia-num">'+dd+'</div>'+vHtml+'</div>';
+    }
+    panel='<div class="cal-panel-hdr"><h3>'+esc(ag.nombre)+(ag.cargo?' — '+cargoBadge(ag.cargo):'')+'</h3>'
+      +'<span class="cal-panel-sub">'+esc(MESES[mes-1])+' '+anio+' &nbsp;·&nbsp; Total: <b>'+esc(ag.total)+'</b> &nbsp;·&nbsp; RED: <b>'+esc(ag.red)+'</b></span></div>'
+      +'<div class="cal-body"><div class="cal-grid">'
+      +'<div class="cal-dia-hdr">Lun</div><div class="cal-dia-hdr">Mar</div><div class="cal-dia-hdr">Mié</div>'
+      +'<div class="cal-dia-hdr">Jue</div><div class="cal-dia-hdr">Vie</div><div class="cal-dia-hdr">Sáb</div><div class="cal-dia-hdr">Dom</div>'
+      +celdas+'</div></div>';
+  }
+
+  document.getElementById('content').innerHTML=
+    '<div class="cal-layout">'
+    +'<div class="cal-lista"><div class="cal-lista-hdr">Agentes — '+compActiva+'</div>'+lista+'</div>'
+    +'<div class="cal-panel">'+panel+'</div>'
+    +'</div>';
+}
+
+function selAgente(nombre){
+  var ag=(datos[compActiva].agentes||[]).filter(function(a){return a.nombre===nombre;})[0]||null;
+  agenteSeleccionado=ag;
+  renderCalendario();
+}
+
+cargar();
+</script>
+</body>
+</html>
